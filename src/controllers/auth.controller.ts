@@ -1,9 +1,12 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import dotenv from "dotenv";
 import { type Request, type Response } from "express";
 import jwt from "jsonwebtoken";
 import { Resend } from "resend";
 import { clientRedis, prisma } from "../config/prisma";
+
+dotenv.config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -21,30 +24,30 @@ const createCookie = (user: any, res: Response) => {
 
 async function register(req: Request, res: Response) {
 	try {
-		const { email, fullname, username, password, role } = req.body;
-		if (!email || !fullname || !username || !password || !role) {
+		const { email, fullname, username, password } = req.body;
+		if (!email || !fullname || !username || !password) {
 			return res.status(400).json({ message: "All fields are required" });
 		}
 
-		await prisma.user
-			.findUnique({
-				where: {
-					email,
-				},
-			})
-			.then(() => {
-				return res.status(400).json({ message: "User already used" });
-			});
+		const existingEmail = await prisma.user.findUnique({
+			where: {
+				email,
+			},
+		});
 
-		await prisma.user
-			.findUnique({
-				where: {
-					username,
-				},
-			})
-			.then(() => {
-				return res.status(400).json({ message: "Username already used" });
-			});
+		if (existingEmail) {
+			return res.status(400).json({ message: "Email already used" });
+		}
+
+		const existingUsername = await prisma.user.findUnique({
+			where: {
+				username,
+			},
+		});
+
+		if (existingUsername) {
+			return res.status(400).json({ message: "Username already used" });
+		}
 
 		const hashPassword = await bcrypt.hash(password, 10);
 
@@ -54,7 +57,6 @@ async function register(req: Request, res: Response) {
 				fullname,
 				username,
 				password: hashPassword,
-				role,
 			},
 		});
 
@@ -64,12 +66,6 @@ async function register(req: Request, res: Response) {
 
 		return res.status(201).json({
 			message: "User registered successfully",
-			user: {
-				email: user.email,
-				fullname: user.fullname,
-				username: user.username,
-				role: user.role,
-			},
 		});
 	} catch (error) {
 		if (error instanceof Error) {
@@ -117,7 +113,6 @@ async function login(req: Request, res: Response) {
 				email: user.email,
 				fullname: user.fullname,
 				username: user.username,
-				role: user.role,
 			},
 		});
 	} catch (error) {

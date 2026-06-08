@@ -13,13 +13,12 @@ model User {
   fullname  String
   username  String   @unique
   password  String
-  role      String   @default("customer")
   status    String   @default("pending")
+  role      String[] @default(["customer"])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([username])
   @@index([fullname])
-  @@index([role])
 }
