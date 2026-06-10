@@ -220,7 +220,7 @@ async function checkSession(req: Request, res: Response) {
 	}
 }
 
-async function logout(req: Request, res: Response) {
+async function logout(_req: Request, res: Response) {
 	try {
 		res.clearCookie("session");
 		return res.status(200).json({
